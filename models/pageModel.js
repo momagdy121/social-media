@@ -19,11 +19,11 @@ const pageSchema = new mongoose.Schema({
     required: true,
   },
 
-  profileImage: {
+  image: {
     type: String,
   },
 
-  coverImage: {
+  cover: {
     type: String,
   },
 

@@ -2,31 +2,47 @@ import cloudinary from "../config/cloudinary.js";
 import apiError from "../Utils/apiError.js";
 import { Readable } from "stream";
 
-const uploadImage = (req, res, next) => {
-  if (req.file) {
-    // Create a readable stream from the file buffer
-    const stream = Readable.from(req.file.buffer);
+const uploadImage = async (req, res, next) => {
+  if (req.files) {
+    try {
+      // Iterate over each field in req.files (e.g., avatar)
+      const uploadPromises = Object.entries(req.files).map(
+        ([fieldName, files]) => {
+          // For each file in the field, create a readable stream and upload
+          return Promise.all(
+            files.map((file) => {
+              return new Promise((resolve, reject) => {
+                const stream = Readable.from(file.buffer);
 
-    // Upload the file to Cloudinary
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: "image",
-      },
-      (error, result) => {
-        if (error) return next(new apiError("Failed to upload the image", 500));
+                const uploadStream = cloudinary.uploader.upload_stream(
+                  {
+                    resource_type: "image",
+                  },
+                  (error, result) => {
+                    if (error)
+                      reject(new apiError("Failed to upload the image", 500));
+                    resolve({ fieldName, url: result.secure_url });
+                  }
+                );
 
-        // Get the URL of the uploaded image
-        res.locals.url = result.secure_url;
+                stream.pipe(uploadStream);
+              });
+            })
+          );
+        }
+      );
 
-        // Call next() after the upload is complete and the URL is set
-        next();
-      }
-    );
+      // Wait for all uploads to finish
+      const uploadedFiles = await Promise.all(uploadPromises);
 
-    // Pipe the stream to the Cloudinary upload stream
-    stream.pipe(uploadStream);
+      // Store the URLs in res.locals for further use
+      res.locals.uploadedFiles = uploadedFiles.flat();
+
+      next();
+    } catch (error) {
+      next(error);
+    }
   } else {
-    // If no file is provided, continue without doing anything
     next();
   }
 };

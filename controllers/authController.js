@@ -7,14 +7,14 @@ import generateTokensFullProcess from "../services/token_management/generateToke
 export const signUp = catchAsync(async (req, res, next) => {
   const { email, password, name, username } = req.body;
 
-  let avatarUrl = res.locals.url || null;
+  const avatar = res.locals.uploadedFiles[0].url;
 
   const user = await userModel.create({
     email,
     password,
     name,
     username,
-    avatar: avatarUrl,
+    avatar,
   });
 
   res.status(201).send({
@@ -25,6 +25,9 @@ export const signUp = catchAsync(async (req, res, next) => {
       name,
       id: user._id,
       avatar: user.avatar,
+      bio: user.bio,
+      city: user.city,
+      website: user.website,
     },
     message: "We sent a verification code to your email",
   });

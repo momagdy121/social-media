@@ -1,7 +1,7 @@
 import express from "express";
+import multer from "multer";
 import verifyAccessToken from "../middlewares/authValidation/verifyAccessToken.js";
 import validateObjectId from "../middlewares/globalValidation/validateObjectID.js";
-import multer from "../middlewares/multer.js";
 import uploadImage from "../middlewares/uploadImage.js";
 import likeRouter from "./likeRouter.js";
 import commentRouter from "./commentRouter.js";
@@ -16,12 +16,12 @@ import {
   getFeedPosts,
   getPost,
   updatePost,
-  getUserPosts,
+  getUserOrPagePosts,
 } from "../controllers/postController.js";
 import isPageAdmin from "../middlewares/pageValidation/isPageAdmin.js";
 
 const postRouter = express.Router({ mergeParams: true });
-
+const upload = multer();
 postRouter.use(verifyAccessToken);
 
 postRouter.param("postId", validateObjectId("postId", "post"));
@@ -35,9 +35,9 @@ postRouter.get("/feed", getFeedPosts);
 
 postRouter
   .route("/")
-  .get(getUserPosts)
+  .get(getUserOrPagePosts)
   .post(
-    multer.single("image"),
+    upload.fields([{ name: "image", maxCount: 1 }]),
     checkBodyFieldsExistence(["description"]),
     isPageAdmin, //NOTE:if there is page id in the url it will check if the user is an admin of the page
     uploadImage,

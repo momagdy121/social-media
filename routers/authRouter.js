@@ -1,3 +1,6 @@
+import { Router } from "express";
+import multer from "multer";
+
 import {
   signUp,
   sendVerificationCode,
@@ -16,19 +19,16 @@ import {
   validateLogin,
 } from "../middlewares/authValidation/auth.js";
 
-import { Router } from "express";
 import { changePassword } from "../controllers/userController.js";
-import upload from "../middlewares/multer.js";
 import uploadImage from "../middlewares/uploadImage.js";
-
 import handleTokenRefresh from "../services/token_management/handleTokenRefresh.js";
 
 const authRouter = Router();
-
+const upload = multer();
 //login , sign up and verify account
 authRouter.post(
   "/signup",
-  upload.single("avatar"), //FIXME: this is not best practice
+  upload.fields([{ name: "avatar", maxCount: 1 }]),
   validateSignUp,
   uploadImage,
   signUp

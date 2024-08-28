@@ -1,9 +1,16 @@
 import express from "express";
+import multer from "multer";
+
 import verifyAccessToken from "../middlewares/authValidation/verifyAccessToken.js";
 import validateObjectID from "../middlewares/globalValidation/validateObjectID.js";
 import postRouter from "./postRouter.js";
 import pageModel from "../models/pageModel.js";
-
+import isDocumentExits from "../middlewares/globalValidation/isDocumentExists.js";
+import isOwner from "../middlewares/pageValidation/isOwner.js";
+import isUserInPendingAdminRequests from "../middlewares/pageValidation/isUserInPendingAdminRequests.js";
+import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
+import allowRoutes from "./../middlewares/allowRoutes.js";
+import uploadImage from "./../middlewares/uploadImage.js";
 import {
   acceptAdmin,
   createPage,
@@ -17,13 +24,8 @@ import {
   editPage,
 } from "./../controllers/pageController.js";
 
-import isDocumentExits from "../middlewares/globalValidation/isDocumentExists.js";
-import isOwner from "../middlewares/pageValidation/isOwner.js";
-import isUserInPendingAdminRequests from "../middlewares/pageValidation/isUserInPendingAdminRequests.js";
-import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
-import allowRoutes from "./../middlewares/allowRoutes.js";
-
 const pageRouter = express.Router();
+const upload = multer();
 
 pageRouter.use(verifyAccessToken);
 
@@ -34,8 +36,8 @@ pageRouter.param("pageId", isDocumentExits(pageModel, "pageId", "page"));
 pageRouter.use(
   "/:pageId/posts",
   allowRoutes([
-    { methods: ["GET"], path: "/" },
-    { methods: ["GET"], path: "/:postId" },
+    { path: "/" },
+    { path: "/:postId" },
     { path: "/:postId/likes" },
     { path: "/:postId/comments" },
   ]),
@@ -44,7 +46,12 @@ pageRouter.use(
 
 pageRouter.post(
   "/",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "cover", maxCount: 1 },
+  ]),
   checkBodyFieldsExistence(["name", "description"]),
+  uploadImage, //cloudinary
   createPage
 );
 
@@ -54,14 +61,15 @@ pageRouter
   .patch("/:pageId/follow", followAndUnFollowPage);
 
 // Route to edit a page - Only the owner can edit
-pageRouter.patch("/:pageId/edit", isOwner, editPage);
+pageRouter.patch("/:pageId/edit", isOwner, editPage); //todo:implement it
 
 // Routes for admin management
 pageRouter.get("/:pageId/admins", getAdmins);
 
-pageRouter.patch("/:pageId/request-admin", requestAndCancelRequestAdmin);
+pageRouter.patch("/:pageId/admin/request", requestAndCancelRequestAdmin);
 
-// Routes for managing admin requests
+// Routes for managing admin requests by owner
+
 pageRouter
   .get("/:pageId/admin/pending", isOwner, getPendingAdminRequests)
   .patch(

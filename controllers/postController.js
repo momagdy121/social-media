@@ -2,14 +2,18 @@ import postModel from "../models/postModel.js";
 import userModel from "../models/userModel.js";
 import { pagination } from "../Utils/queryProcesses.js";
 import mongoose from "mongoose";
-import { includeUserPipeline, isLiked } from "../Utils/Pipelines.js";
+import {
+  isLiked,
+  includeUserAndPagePipeline,
+  removePageAndUserPipeline,
+} from "../Pipelines/PostPipelines.js";
 import sendResponse from "../Utils/sendResponse.js";
 import catchAsync from "../Utils/catchAsync.js";
-import likeModel from "./../models/likeModel.js";
+import pageModel from "../models/pageModel.js";
 
 export const createPost = catchAsync(async (req, res, next) => {
   const user = req.user;
-  const image = res.locals.url || null;
+  const image = res.locals.uploadedFiles[0]?.url || null;
   const { description } = req.body;
   const { pageId } = req.params || null; // Extracting pageId from the URL params if it exists
 
@@ -30,16 +34,12 @@ export const getPost = catchAsync(async (req, res, next) => {
     {
       $match: { _id: mongoose.Types.ObjectId(postId) },
     },
-    ...includeUserPipeline, // Include user data dynamically
+    ...includeUserAndPagePipeline,
+    ...isLiked(req.user._id),
   ]);
 
-  const isLiked = await likeModel.exists({
-    user: req.user._id,
-    post: mongoose.Types.ObjectId(postId),
-  });
-
   sendResponse(res, {
-    data: { post: { ...post[0], isLiked: !!isLiked } },
+    data: { post: { ...post[0] } },
   });
 });
 
@@ -56,7 +56,7 @@ export const getFeedPosts = catchAsync(async (req, res) => {
           $or: [{ user: { $in: user.friends } }, { user: user._id }],
         },
       },
-      ...includeUserPipeline,
+      ...includeUserAndPagePipeline,
       ...isLiked(req.user._id),
     ])
     .sort({ createdAt: -1 })
@@ -66,24 +66,48 @@ export const getFeedPosts = catchAsync(async (req, res) => {
   sendResponse(res, { data: { page, posts } });
 });
 
-export const getUserPosts = catchAsync(async (req, res) => {
+export const getUserOrPagePosts = catchAsync(async (req, res) => {
   const { skip, limit, page } = pagination(req);
+  if (req.params.userId) {
+    const userID = mongoose.Types.ObjectId(req.params.userId || req.user._id);
 
-  const userID = mongoose.Types.ObjectId(req.params.userId || req.user._id);
+    const user = await userModel
+      .findOne({ _id: userID })
+      .select("name username avatar _id")
+      .lean();
 
-  const user = await userModel
-    .findOne({ _id: userID })
-    .select("name username avatar _id")
-    .lean();
+    // Query posts by user ID
+    const posts = await postModel
+      .aggregate([
+        { $match: { user: userID, page: null } },
+        ...isLiked(req.user._id),
+        ...removePageAndUserPipeline,
+      ])
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-  // Query posts by user ID
-  const posts = await postModel
-    .aggregate([{ $match: { user: userID } }])
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+    sendResponse(res, { data: { user, page, posts } });
+  } else {
+    const pageID = mongoose.Types.ObjectId(req.params.pageId);
 
-  sendResponse(res, { data: { user, page, posts } });
+    const page = await pageModel
+      .findOne({ _id: pageID })
+      .select("name image _id")
+      .lean();
+
+    // Query posts by page ID
+    const posts = await postModel
+      .aggregate([
+        { $match: { page: pageID } },
+        ...isLiked(req.user._id),
+        ...removePageAndUserPipeline,
+      ])
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    sendResponse(res, { data: { page, posts } });
+  }
 });
 
 export const updatePost = catchAsync(async (req, res) => {

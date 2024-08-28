@@ -74,20 +74,6 @@ postSchema.pre("aggregate", function (next) {
           $ifNull: [{ $arrayElemAt: ["$likesCount.count", 0] }, 0],
         },
       },
-    },
-    {
-      $project: {
-        commentsCount: 1,
-        likesCount: 1,
-        _id: 1,
-        description: 1,
-        image: 1,
-        isEdited: 1,
-        createdAt: 1,
-        updatedAt: 1,
-        page: 1,
-        user: 1,
-      },
     }
   );
 
