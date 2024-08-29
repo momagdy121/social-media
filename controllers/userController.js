@@ -7,10 +7,9 @@ import sendResponse from "../Utils/sendResponse.js";
 export const checkUsername = catchAsync(async (req, res, next) => {
   const { username } = req.body;
 
-  const user = await userModel.find({ username });
+  const user = await userModel.exists({ username });
 
-  if (user.length > 0)
-    return next(new ApiError("username is not available", 400));
+  if (user) return next(new ApiError("username is not available", 400));
 
   sendResponse(res, { message: "username is available" });
 });
@@ -18,6 +17,7 @@ export const checkUsername = catchAsync(async (req, res, next) => {
 export const getProfile = catchAsync(async (req, res) => {
   const { _id, name, username, rule, verified, avatar, city, bio, website } =
     req.user;
+
   const user = {
     _id,
     name,
@@ -32,11 +32,13 @@ export const getProfile = catchAsync(async (req, res) => {
 
   sendResponse(res, { data: { user } });
 });
+
 export const getFriends = catchAsync(async (req, res, next) => {
   const user = req.user;
   const friends = await userModel
     .find({ _id: { $in: user.friends } })
-    .select("name username avatar _id");
+    .selectBasicInfo()
+    .lean();
 
   sendResponse(res, { data: { friends } });
 });
@@ -44,22 +46,16 @@ export const getFriends = catchAsync(async (req, res, next) => {
 export const usersSearch = catchAsync(async (req, res, next) => {
   const { limit, skip, page } = pagination(req);
 
-  if (!req.query.q) {
+  if (!req.query.q)
     return next(new ApiError("Please provide a search query", 400));
-  }
 
   // Search for users matching the query
   let users = await userModel
-    .find({
-      $or: [
-        { name: { $regex: req.query.q, $options: "i" } },
-        { username: { $regex: req.query.q, $options: "i" } },
-      ],
-    })
+    .findByName(req.query.q)
     .limit(limit)
     .skip(skip)
-    .select("name username avatar _id")
-    .lean(); // Using lean() for better performance
+    .selectBasicInfo()
+    .lean();
 
   // Check if each user is a friend of the current user
   users.forEach((user) => {
@@ -154,13 +150,14 @@ export const getPendingRequests = catchAsync(async (req, res, next) => {
 
   const users = await userModel
     .find({ _id: { $in: user.pendingRequests } })
-    .select("name email username avatar _id");
+    .selectBasicInfo()
+    .lean();
 
   sendResponse(res, { data: { users } });
 });
 
 //ownership
-export const changeRule = catchAsync((req, res, next) => {
+/* export const changeRule = catchAsync((req, res, next) => {
   if (!req.body.rule) return next(new ApiError("Please provide rule", 400));
 
   if (![rule.ADMIN, rule.USER].includes(req.body.rule))
@@ -183,3 +180,4 @@ export const getAllUser = catchAsync(async (req, res) => {
   const users = await userModel.find(req.query);
   sendResponse(res, { data: { users } });
 });
+ */

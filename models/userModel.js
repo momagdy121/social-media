@@ -62,6 +62,13 @@ const userSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+
+    followingPages: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "pages",
+      },
+    ],
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -99,6 +106,19 @@ const userSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
   }
 );
+
+userSchema.statics.findByName = function (query) {
+  return this.find({
+    $or: [
+      { name: { $regex: query, $options: "i" } },
+      { username: { $regex: query, $options: "i" } },
+    ],
+  });
+};
+
+userSchema.query.selectBasicInfo = function () {
+  return this.select("name username avatar _id");
+};
 
 userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {

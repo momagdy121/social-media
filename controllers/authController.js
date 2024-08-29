@@ -3,11 +3,12 @@ import catchAsync from "../Utils/catchAsync.js";
 import verificationMail from "../services/mailService/verificationMail.js";
 import resetPassMail from "../services/mailService/resetPassMail.js";
 import generateTokensFullProcess from "../services/token_management/generateTokensFullProcess.js";
+import sendResponse from "../Utils/sendResponse.js";
 
 export const signUp = catchAsync(async (req, res, next) => {
   const { email, password, name, username } = req.body;
 
-  const avatar = res.locals.uploadedFiles[0].url;
+  const avatar = res.locals.uploadedFiles[0]?.url || null;
 
   const user = await userModel.create({
     email,
@@ -17,17 +18,19 @@ export const signUp = catchAsync(async (req, res, next) => {
     avatar,
   });
 
-  res.status(201).send({
-    status: "success",
-    user: {
-      email,
-      username,
-      name,
-      id: user._id,
-      avatar: user.avatar,
-      bio: user.bio,
-      city: user.city,
-      website: user.website,
+  sendResponse(res, {
+    code: 201,
+    data: {
+      user: {
+        email,
+        username,
+        name,
+        id: user._id,
+        avatar: user.avatar,
+        bio: user.bio,
+        city: user.city,
+        website: user.website,
+      },
     },
     message: "We sent a verification code to your email",
   });
@@ -42,11 +45,7 @@ export const sendVerificationCode = catchAsync(async (req, res, next) => {
 
   await verificationMail(req.body.email, verificationCode);
 
-  res.status(200).json({
-    status: "success",
-    message:
-      "we sent a verification code to your email note: check your spam if you didn't find the message in your inbox",
-  });
+  sendResponse(res, { message: "We sent a verification code to your email" });
 });
 
 export const verifyAccount = catchAsync(async (req, res, next) => {
@@ -59,24 +58,14 @@ export const verifyAccount = catchAsync(async (req, res, next) => {
   // Create tokens
   await generateTokensFullProcess(user, res);
 
-  res.send({
-    status: "success",
-    user: {
-      email: user.email,
-      username: user.username,
-      name: user.name,
-      id: user._id,
-      avatar: user.avatar,
-    },
-    message: "your account has been verified",
-  });
+  sendResponse(res, { message: "verified" });
 });
 
 export const login = catchAsync(async (req, res, next) => {
   const user = req.user;
   await generateTokensFullProcess(user, res);
 
-  res.status(200).send({ status: "success", message: "logged in" });
+  sendResponse(res, { message: "logged in" });
 });
 
 export const logout = catchAsync(async (req, res, next) => {
@@ -91,7 +80,8 @@ export const logout = catchAsync(async (req, res, next) => {
     secure: true,
     sameSite: "Strict",
   });
-  res.status(200).json({ status: "success", message: "logged out" });
+
+  sendResponse(res, { message: "logged out" });
 });
 
 export const sendForgotPasswordCode = catchAsync(async (req, res, next) => {
@@ -101,23 +91,21 @@ export const sendForgotPasswordCode = catchAsync(async (req, res, next) => {
   await resetPassMail(user.email, resetCode);
 
   await await user.save({ validateBeforeSave: false });
-  res.json({
-    status: "Success",
+
+  sendResponse(res, {
     message: `Reset password code sent to your email ${req.body.email},"will be expired in 10 minutes !!" note :check your spam if you didn't found the message in your inbox `,
   });
 });
 
 export const verifyForgotPasswordCode = catchAsync(async (req, res, next) => {
-  res.send({
-    status: "success",
+  sendResponse(res, {
     message:
       "now make patch request with the code , email and the the new password ",
   });
 });
 
 export const refreshTheToken = catchAsync(async (req, res, next) => {
-  res.status(200).send({
-    status: "success",
-    message: "Token refreshed",
+  sendResponse(res, {
+    message: "refreshed",
   });
 });

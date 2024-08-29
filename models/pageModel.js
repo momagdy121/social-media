@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import followerModel from "./follower.js";
 
 const pageSchema = new mongoose.Schema({
   name: {

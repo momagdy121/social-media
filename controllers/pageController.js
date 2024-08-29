@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import {
   excludeAdminsPipeline,
   includeOwnerPipeline,
+  isFollower,
 } from "../Pipelines/pagePipelines.js";
 import { countFollowersPipeline } from "../Pipelines/followersPipeLines.js";
 
@@ -22,6 +23,7 @@ export const getPageById = catchAsync(async (req, res, next) => {
     },
     ...includeOwnerPipeline,
     ...excludeAdminsPipeline,
+    ...isFollower,
   ]);
 
   const followers = await followerModel.aggregate([
@@ -31,9 +33,10 @@ export const getPageById = catchAsync(async (req, res, next) => {
 
     ...countFollowersPipeline,
   ]);
+  let followersCount = followers[0]?.followersCount || 0;
 
   sendResponse(res, {
-    data: { page: { ...page[0], followers: followers[0].followersCount } },
+    data: { page: { ...page[0], followersCount } },
   });
 });
 
@@ -44,10 +47,7 @@ export const getFollowers = catchAsync(async (req, res, next) => {
   let followers = await followerModel
     .find({ page: pageId })
     .select("user -_id")
-    .populate({
-      path: "user",
-      select: "name  avatar _id",
-    })
+    .populateUser()
     .limit(limit)
     .skip(skip)
     .lean();
@@ -88,12 +88,16 @@ export const followAndUnFollowPage = catchAsync(async (req, res, next) => {
       user: user._id,
       page: pageId,
     });
+    user.followingPages.pull(pageId);
+    await user.save();
     sendResponse(res, { message: "unfollowed" });
   } else {
     await followerModel.create({
       user: user._id,
       page: pageId,
     });
+    user.followingPages.push(pageId);
+    await user.save();
     sendResponse(res, { message: "followed" });
   }
 });

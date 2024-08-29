@@ -6,6 +6,7 @@ import {
   isLiked,
   includeUserAndPagePipeline,
   removePageAndUserPipeline,
+  feedsPipeline,
 } from "../Pipelines/PostPipelines.js";
 import sendResponse from "../Utils/sendResponse.js";
 import catchAsync from "../Utils/catchAsync.js";
@@ -51,13 +52,9 @@ export const getFeedPosts = catchAsync(async (req, res) => {
   //find posts where post.user in user.friends and in the user._id
   const posts = await postModel
     .aggregate([
-      {
-        $match: {
-          $or: [{ user: { $in: user.friends } }, { user: user._id }],
-        },
-      },
+      ...feedsPipeline(user),
       ...includeUserAndPagePipeline,
-      ...isLiked(req.user._id),
+      ...isLiked(user._id),
     ])
     .sort({ createdAt: -1 })
     .limit(limit)
@@ -68,46 +65,43 @@ export const getFeedPosts = catchAsync(async (req, res) => {
 
 export const getUserOrPagePosts = catchAsync(async (req, res) => {
   const { skip, limit, page } = pagination(req);
-  if (req.params.userId) {
-    const userID = mongoose.Types.ObjectId(req.params.userId || req.user._id);
 
-    const user = await userModel
-      .findOne({ _id: userID })
-      .select("name username avatar _id")
-      .lean();
+  const entityID = mongoose.Types.ObjectId(
+    req.params.userId || req.params.pageId
+  );
+  const isUser = Boolean(req.params.userId);
 
-    // Query posts by user ID
-    const posts = await postModel
-      .aggregate([
-        { $match: { user: userID, page: null } },
-        ...isLiked(req.user._id),
-        ...removePageAndUserPipeline,
-      ])
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+  // Fetch the entity (either user or page)
+  const entity = isUser
+    ? await userModel.findOne({ _id: entityID }).selectBasicInfo().lean()
+    : await pageModel
+        .findOne({ _id: entityID })
+        .select("name image _id")
+        .lean();
 
-    sendResponse(res, { data: { user, page, posts } });
-  } else {
-    const pageID = mongoose.Types.ObjectId(req.params.pageId);
+  // Define the match condition based on whether the entity is a user or a page
+  const matchCondition = isUser
+    ? { user: entityID, page: null }
+    : { page: entityID };
 
-    const page = await pageModel
-      .findOne({ _id: pageID })
-      .select("name image _id")
-      .lean();
+  // Query posts by the user or page ID
+  const posts = await postModel
+    .aggregate([
+      { $match: matchCondition },
+      ...isLiked(req.user._id),
+      ...removePageAndUserPipeline,
+    ])
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
 
-    // Query posts by page ID
-    const posts = await postModel
-      .aggregate([
-        { $match: { page: pageID } },
-        ...isLiked(req.user._id),
-        ...removePageAndUserPipeline,
-      ])
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-    sendResponse(res, { data: { page, posts } });
-  }
+  sendResponse(res, {
+    data: {
+      page,
+      [isUser ? "user" : "page"]: entity,
+      posts,
+    },
+  });
 });
 
 export const updatePost = catchAsync(async (req, res) => {

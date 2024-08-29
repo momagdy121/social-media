@@ -4,16 +4,11 @@ import postRouter from "./postRouter.js";
 import validateObjectID from "../middlewares/globalValidation/validateObjectID.js";
 import verifyAccessToken from "./../middlewares/authValidation/verifyAccessToken.js";
 
-import {
-  isAuthorized,
-  verifyPassword,
-} from "../middlewares/authValidation/auth.js";
+import { verifyPassword } from "../middlewares/authValidation/auth.js";
 import {
   getFriends,
   changePassword,
-  changeRule,
   checkUsername,
-  getAllUser,
   getProfile,
   acceptRequest,
   rejectRequest,
@@ -80,7 +75,7 @@ userRouter.get("/:userId", getUserById);
 
 //admin //owner
 
-userRouter.get("/all-users", isAuthorized(rule.OWNER, rule.ADMIN), getAllUser);
-userRouter.patch("/:userId/change-rule", isAuthorized(rule.OWNER), changeRule);
+// userRouter.get("/all-users", isAuthorized(rule.OWNER, rule.ADMIN), getAllUser);
+// userRouter.patch("/:userId/change-rule", isAuthorized(rule.OWNER), changeRule);
 
 export default userRouter;

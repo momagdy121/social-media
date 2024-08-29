@@ -32,3 +32,22 @@ export const excludeAdminsPipeline = [
     },
   },
 ];
+
+export const isFollower = [
+  {
+    $lookup: {
+      from: "followers",
+      let: { pageId: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$page", "$$pageId"] } } },
+        { $count: "count" },
+      ],
+      as: "isFollower",
+    },
+  },
+  {
+    $addFields: {
+      isFollower: { $gt: [{ $arrayElemAt: ["$isFollower.count", 0] }, 0] },
+    },
+  },
+];

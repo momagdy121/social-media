@@ -51,6 +51,7 @@ export const includeUserPipeline = [
     },
   },
 ];
+
 export const isLiked = (userId) => {
   return [
     {
@@ -195,3 +196,17 @@ export const removePageAndUserPipeline = [
     },
   },
 ];
+
+export const feedsPipeline = (user) => {
+  return [
+    {
+      $match: {
+        $or: [
+          { user: { $in: user.friends } },
+          { user: user._id },
+          { page: { $in: user.followingPages } },
+        ],
+      },
+    },
+  ];
+};
