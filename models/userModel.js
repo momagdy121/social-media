@@ -68,16 +68,11 @@ const userSchema = new mongoose.Schema(
         ref: "users",
       },
     ],
+
     pendingRequests: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
-      },
-    ],
-    followingPages: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "pages",
       },
     ],
 

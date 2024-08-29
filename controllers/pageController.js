@@ -1,24 +1,61 @@
 import pageModel from "./../models/pageModel.js";
-
+import followerModel from "./../models/follower.js";
 import ApiError from "../Utils/apiError.js";
-import userModel from "../models/userModel.js";
 import sendResponse from "../Utils/sendResponse.js";
 import catchAsync from "../Utils/catchAsync.js";
+import { pagination } from "../Utils/queryProcesses.js";
+import mongoose from "mongoose";
+import {
+  excludeAdminsPipeline,
+  includeOwnerPipeline,
+} from "../Pipelines/pagePipelines.js";
+import { countFollowersPipeline } from "../Pipelines/followersPipeLines.js";
 
 export const getPageById = catchAsync(async (req, res, next) => {
-  const page = await pageModel
-    .findById(req.params.pageId)
-    .select("-__v -pendingAdminRequests -admins")
-    .populate({
-      path: "owner",
-      select: "name username avatar _id",
-    })
-    .lean();
+  let { pageId } = req.params;
 
-  sendResponse(res, { data: { page } });
+  pageId = mongoose.Types.ObjectId(pageId);
+
+  const page = await pageModel.aggregate([
+    {
+      $match: { _id: pageId },
+    },
+    ...includeOwnerPipeline,
+    ...excludeAdminsPipeline,
+  ]);
+
+  const followers = await followerModel.aggregate([
+    {
+      $match: { page: pageId },
+    },
+
+    ...countFollowersPipeline,
+  ]);
+
+  sendResponse(res, {
+    data: { page: { ...page[0], followers: followers[0].followersCount } },
+  });
 });
 
-export const getFollowers = catchAsync(async (req, res, next) => {});
+export const getFollowers = catchAsync(async (req, res, next) => {
+  let { pageId } = req.params;
+  const { limit, skip, page } = pagination(req);
+
+  let followers = await followerModel
+    .find({ page: pageId })
+    .select("user -_id")
+    .populate({
+      path: "user",
+      select: "name  avatar _id",
+    })
+    .limit(limit)
+    .skip(skip)
+    .lean();
+
+  followers = followers.map((follower) => follower.user);
+
+  sendResponse(res, { data: { page, followers } });
+});
 
 export const createPage = catchAsync(async (req, res, next) => {
   const image = res.locals.uploadedFiles[0]?.url || null;
@@ -41,13 +78,22 @@ export const followAndUnFollowPage = catchAsync(async (req, res, next) => {
   const user = req.user;
   const { pageId } = req.params;
 
-  if (user.followingPages.includes(pageId)) {
-    user.followingPages.pull(pageId);
-    await user.save();
+  const isFollower = await followerModel.exists({
+    user: user._id,
+    page: pageId,
+  });
+
+  if (isFollower) {
+    await followerModel.findOneAndDelete({
+      user: user._id,
+      page: pageId,
+    });
     sendResponse(res, { message: "unfollowed" });
   } else {
-    user.followingPages.push(pageId);
-    await user.save();
+    await followerModel.create({
+      user: user._id,
+      page: pageId,
+    });
     sendResponse(res, { message: "followed" });
   }
 });
@@ -88,6 +134,7 @@ export const requestAndCancelRequestAdmin = catchAsync(
 export const editPage = catchAsync(async (req, res, next) => {
   res.send({ message: "not implemented" });
 });
+
 export const acceptAdmin = catchAsync(async (req, res, next) => {
   const { userId } = req.body;
   const { page } = req;
@@ -101,6 +148,8 @@ export const acceptAdmin = catchAsync(async (req, res, next) => {
 });
 
 export const getPendingAdminRequests = catchAsync(async (req, res, next) => {
+  const { limit, skip, page } = pagination(req);
+
   const pendingAdmins = await pageModel
     .findById(req.params.pageId)
     .select("pendingAdminRequests -_id")
@@ -108,9 +157,11 @@ export const getPendingAdminRequests = catchAsync(async (req, res, next) => {
       path: "pendingAdminRequests",
       select: "name username avatar _id",
     })
+    .skip(skip)
+    .limit(limit)
     .lean();
 
-  sendResponse(res, { data: { ...pendingAdmins } });
+  sendResponse(res, { data: { page, ...pendingAdmins } });
 });
 
 export const rejectAdminRequest = catchAsync(async (req, res, next) => {

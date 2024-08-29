@@ -1,3 +1,29 @@
+export const includePagePipeline = [
+  {
+    $lookup: {
+      from: "pages",
+      localField: "page",
+      foreignField: "_id",
+      as: "page",
+      pipeline: [
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            image: 1,
+          },
+        },
+      ],
+    },
+  },
+  { $unwind: "$page" },
+  {
+    $project: {
+      __v: 0,
+      user: 0,
+    },
+  },
+];
 export const includeUserPipeline = [
   {
     $lookup: {
@@ -25,7 +51,6 @@ export const includeUserPipeline = [
     },
   },
 ];
-
 export const isLiked = (userId) => {
   return [
     {
@@ -56,29 +81,38 @@ export const isLiked = (userId) => {
   ];
 };
 
-export const includePagePipeline = [
+export const calculateLikesAndCommentsPipeline = [
   {
     $lookup: {
-      from: "pages",
-      localField: "page",
-      foreignField: "_id",
-      as: "page",
+      from: "comments",
+      let: { postId: "$_id" },
       pipeline: [
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            image: 1,
-          },
-        },
+        { $match: { $expr: { $eq: ["$post", "$$postId"] } } },
+        { $count: "count" },
       ],
+      as: "commentsCount",
     },
   },
-  { $unwind: "$page" },
   {
-    $project: {
-      __v: 0,
-      user: 0,
+    $lookup: {
+      from: "likes",
+      let: { postId: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$post", "$$postId"] } } },
+        { $count: "count" },
+      ],
+      as: "likesCount",
+    },
+  },
+  {
+    $addFields: {
+      // Ensure commentsCount and likesCount are always present
+      commentsCount: {
+        $ifNull: [{ $arrayElemAt: ["$commentsCount.count", 0] }, 0],
+      },
+      likesCount: {
+        $ifNull: [{ $arrayElemAt: ["$likesCount.count", 0] }, 0],
+      },
     },
   },
 ];

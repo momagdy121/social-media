@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { calculateLikesAndCommentsPipeline } from "./../Pipelines/PostPipelines.js";
 
 const postSchema = new mongoose.Schema(
   {
@@ -41,41 +42,7 @@ const postSchema = new mongoose.Schema(
 );
 
 postSchema.pre("aggregate", function (next) {
-  this.pipeline().unshift(
-    {
-      $lookup: {
-        from: "comments",
-        let: { postId: "$_id" },
-        pipeline: [
-          { $match: { $expr: { $eq: ["$post", "$$postId"] } } },
-          { $count: "count" },
-        ],
-        as: "commentsCount",
-      },
-    },
-    {
-      $lookup: {
-        from: "likes",
-        let: { postId: "$_id" },
-        pipeline: [
-          { $match: { $expr: { $eq: ["$post", "$$postId"] } } },
-          { $count: "count" },
-        ],
-        as: "likesCount",
-      },
-    },
-    {
-      $addFields: {
-        // Ensure commentsCount and likesCount are always present
-        commentsCount: {
-          $ifNull: [{ $arrayElemAt: ["$commentsCount.count", 0] }, 0],
-        },
-        likesCount: {
-          $ifNull: [{ $arrayElemAt: ["$likesCount.count", 0] }, 0],
-        },
-      },
-    }
-  );
+  this.pipeline().unshift(...calculateLikesAndCommentsPipeline);
 
   next();
 });

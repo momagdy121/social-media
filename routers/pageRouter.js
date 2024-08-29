@@ -22,6 +22,7 @@ import {
   rejectAdminRequest,
   removeFromAdmin,
   editPage,
+  getFollowers,
 } from "./../controllers/pageController.js";
 
 const pageRouter = express.Router();
@@ -55,20 +56,17 @@ pageRouter.post(
   createPage
 );
 
-// Routes for page-level actions for users
 pageRouter
   .get("/:pageId", getPageById)
-  .patch("/:pageId/follow", followAndUnFollowPage);
+  .patch("/:pageId/follow", followAndUnFollowPage)
+  .get("/:pageId/followers", getFollowers);
 
-// Route to edit a page - Only the owner can edit
-pageRouter.patch("/:pageId/edit", isOwner, editPage); //todo:implement it
+pageRouter.patch("/:pageId", isOwner, editPage); //todo:implement it
 
-// Routes for admin management
+//admins stuff
 pageRouter.get("/:pageId/admins", getAdmins);
 
 pageRouter.patch("/:pageId/admin/request", requestAndCancelRequestAdmin);
-
-// Routes for managing admin requests by owner
 
 pageRouter
   .get("/:pageId/admin/pending", isOwner, getPendingAdminRequests)
