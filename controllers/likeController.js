@@ -1,5 +1,5 @@
-import catchAsync from "../Utils/catchAsync.js";
-import sendResponse from "../Utils/sendResponse.js";
+import catchAsync from "../utils/catchAsync.js";
+import sendResponse from "../utils/sendResponse.js";
 import likeModel from "./../models/likeModel.js";
 
 export const likeAndUnlike = catchAsync(async (req, res) => {

@@ -1,15 +1,15 @@
 import postModel from "../models/postModel.js";
 import userModel from "../models/userModel.js";
-import { pagination } from "../Utils/queryProcesses.js";
+import { pagination } from "../utils/queryProcesses.js";
 import mongoose from "mongoose";
 import {
   isLiked,
   includeUserAndPagePipeline,
   removePageAndUserPipeline,
   feedsPipeline,
-} from "../Pipelines/PostPipelines.js";
-import sendResponse from "../Utils/sendResponse.js";
-import catchAsync from "../Utils/catchAsync.js";
+} from "../pipelines/PostPipelines.js";
+import sendResponse from "../utils/sendResponse.js";
+import catchAsync from "../utils/catchAsync.js";
 import pageModel from "../models/pageModel.js";
 
 export const createPost = catchAsync(async (req, res, next) => {

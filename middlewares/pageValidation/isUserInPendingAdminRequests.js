@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import ApiError from "./../../Utils/apiError.js";
+import ApiError from "../../utils/apiError.js";
 
 const isUserInPendingAdminRequests = (req, res, next) => {
   const { userId } = req.body;

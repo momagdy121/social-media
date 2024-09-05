@@ -5,11 +5,11 @@ import validateObjectId from "../middlewares/globalValidation/validateObjectID.j
 import uploadImage from "../middlewares/uploadImage.js";
 import likeRouter from "./likeRouter.js";
 import commentRouter from "./commentRouter.js";
-import isDocumentExists from "./../middlewares/globalValidation/isDocumentExists.js";
+import isDocumentExists from "../middlewares/globalValidation/isDocumentExists.js";
 
 import postModel from "../models/postModel.js";
 import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
-import isDocumentYours from "./../middlewares/globalValidation/isDocumentYours.js";
+import isDocumentYours from "../middlewares/globalValidation/isDocumentYours.js";
 import {
   createPost,
   deletePost,
@@ -22,38 +22,45 @@ import isPageAdmin from "../middlewares/pageValidation/isPageAdmin.js";
 
 const postRouter = express.Router({ mergeParams: true });
 const upload = multer();
+
+// Ensure the user is authenticated for all routes
 postRouter.use(verifyAccessToken);
 
+// Validate `postId` parameter
 postRouter.param("postId", validateObjectId("postId", "post"));
 postRouter.param("postId", isDocumentExists(postModel, "postId", "post"));
-//NOTE: only nested routes are implemented for likes and comments
 
+// Nested routes for likes and comments
 postRouter.use("/:postId/likes", likeRouter);
 postRouter.use("/:postId/comments", commentRouter);
 
+// Route to get the feed posts
 postRouter.get("/feed", getFeedPosts);
 
+// Routes for user or page posts
 postRouter
   .route("/")
-  .get(getUserOrPagePosts)
+  .get(getUserOrPagePosts) // Return current user's posts if `:userId` is not provided
   .post(
     upload.fields([{ name: "image", maxCount: 1 }]),
     checkBodyFieldsExistence(["description"]),
-    isPageAdmin, //NOTE:if there is page id in the url it will check if the user is an admin of the page
+    isPageAdmin, // Check if the user is an admin if `pageId` is present in the URL
     uploadImage,
     createPost
   );
 
-//NOTE: if there is no :userId in the url it will return the current user posts
-
+// Routes for specific post operations
 postRouter
   .route("/:postId")
   .get(getPost)
   .patch(
     checkBodyFieldsExistence(["description"]),
-    isDocumentYours(postModel, "postId"),
+    isDocumentYours(postModel, "postId"), // Ensure the post belongs to the user
     updatePost
   )
-  .delete(isDocumentYours(postModel, "postId"), deletePost);
+  .delete(
+    isDocumentYours(postModel, "postId"), // Ensure the post belongs to the user
+    deletePost
+  );
 
 export default postRouter;

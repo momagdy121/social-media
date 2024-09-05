@@ -1,16 +1,16 @@
 import pageModel from "./../models/pageModel.js";
 import followerModel from "./../models/follower.js";
-import ApiError from "../Utils/apiError.js";
-import sendResponse from "../Utils/sendResponse.js";
-import catchAsync from "../Utils/catchAsync.js";
-import { pagination } from "../Utils/queryProcesses.js";
+import ApiError from "../utils/apiError.js";
+import sendResponse from "../utils/sendResponse.js";
+import catchAsync from "../utils/catchAsync.js";
+import { pagination } from "../utils/queryProcesses.js";
 import mongoose from "mongoose";
 import {
   excludeAdminsPipeline,
   includeOwnerPipeline,
   isFollower,
-} from "../Pipelines/pagePipelines.js";
-import { countFollowersPipeline } from "../Pipelines/followersPipeLines.js";
+} from "../pipelines/pagePipelines.js";
+import { countFollowersPipeline } from "../pipelines/followersPipeLines.js";
 
 export const getPageById = catchAsync(async (req, res, next) => {
   let { pageId } = req.params;
@@ -26,18 +26,26 @@ export const getPageById = catchAsync(async (req, res, next) => {
     ...isFollower,
   ]);
 
-  const followers = await followerModel.aggregate([
-    {
-      $match: { page: pageId },
-    },
-
-    ...countFollowersPipeline,
-  ]);
+  const followers = await followerModel.aggregate(
+    countFollowersPipeline(pageId)
+  );
   let followersCount = followers[0]?.followersCount || 0;
 
   sendResponse(res, {
     data: { page: { ...page[0], followersCount } },
   });
+});
+export const searchPages = catchAsync(async (req, res, next) => {
+  const { q } = req.query;
+  const { limit, skip, page } = pagination(req);
+  const pages = await pageModel
+    .find({ name: { $regex: q, $options: "i" } })
+    .select("name image -_id")
+    .limit(limit)
+    .skip(skip)
+    .lean();
+
+  sendResponse(res, { data: { page, pages } });
 });
 
 export const getFollowers = catchAsync(async (req, res, next) => {
@@ -58,8 +66,11 @@ export const getFollowers = catchAsync(async (req, res, next) => {
 });
 
 export const createPage = catchAsync(async (req, res, next) => {
-  const image = res.locals.uploadedFiles[0]?.url || null;
-  const cover = res.locals.uploadedFiles[1]?.url || null;
+  const uploadedFiles = res.locals.uploadedFiles || [];
+
+  const image = uploadedFiles[0]?.url || null;
+  const cover = uploadedFiles[1]?.url || null;
+
   const { name, description } = req.body;
 
   const user = req.user;

@@ -7,8 +7,8 @@ import multer from "multer";
 
 import startServer from "./config/server.js";
 import connectToDatabase from "./config/DB.js";
-import globalErrorHandler from "./middlewares/globalErrorhandler.js";
-import ApiError from "./Utils/apiError.js";
+import globalErrorHandler from "./middlewares/globalErrorHandler.js";
+import ApiError from "./utils/apiError.js";
 
 //routers
 import authRouter from "./routers/authRouter.js";

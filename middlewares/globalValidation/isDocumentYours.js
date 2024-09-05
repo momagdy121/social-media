@@ -1,4 +1,4 @@
-import ApiError from "../../Utils/apiError.js";
+import ApiError from "../../utils/apiError.js";
 
 function isDocumentYours(docModel, paramId) {
   return async (req, res, next) => {

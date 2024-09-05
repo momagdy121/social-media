@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { calculateLikesAndCommentsPipeline } from "./../Pipelines/PostPipelines.js";
+import { calculateLikesAndCommentsPipeline } from "./../pipelines/PostPipelines.js";
 
 const postSchema = new mongoose.Schema(
   {

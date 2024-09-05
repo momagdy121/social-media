@@ -1,5 +1,4 @@
 import { Router } from "express";
-import rule from "../Utils/rules.js";
 import postRouter from "./postRouter.js";
 import validateObjectID from "../middlewares/globalValidation/validateObjectID.js";
 import verifyAccessToken from "./../middlewares/authValidation/verifyAccessToken.js";
@@ -16,6 +15,7 @@ import {
   getPendingRequests,
   getUserById,
   usersSearch,
+  editProfile,
 } from "./../controllers/userController.js";
 import allowRoutes from "../middlewares/allowRoutes.js";
 import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
@@ -24,10 +24,11 @@ import userModel from "../models/userModel.js";
 
 const userRouter = Router();
 
+// Param Middleware for Validating userId
 userRouter.param("userId", validateObjectID("userId", "user"));
 userRouter.param("userId", isDocumentExists(userModel, "userId", "user"));
 
-// NOTE: nested and separate routes are implemented for posts
+// Nested Routes for Posts
 userRouter.use(
   "/:userId/posts",
   allowRoutes([
@@ -40,20 +41,23 @@ userRouter.use(
   postRouter
 );
 
-//check if the user name is available or not to use
+// Public Routes
 userRouter.get(
   "/username/check",
   checkBodyFieldsExistence(["username"]),
   checkUsername
 );
 
-userRouter.use(verifyAccessToken); //verify the access token
+// Authenticated Routes
+userRouter.use(verifyAccessToken); // Apply Access Token Verification for routes below
 
-//get the data of the user
-userRouter.get("/profile", getProfile);
+// User Profile Management
+userRouter.route("/profile").get(getProfile).patch(editProfile);
 
+// User Search
 userRouter.get("/search", usersSearch);
 
+// Password Management
 userRouter.patch(
   "/password/change",
   checkBodyFieldsExistence(["old", "new"]),
@@ -61,20 +65,20 @@ userRouter.patch(
   changePassword
 );
 
-//friend request
+// Friend Requests Management
 userRouter.get("/pending-requests", getPendingRequests);
 userRouter.get("/friends", getFriends);
 
 userRouter
-  .post("/:userId/request", sendRequest)
+  .route("/:userId/request")
+  .post(sendRequest)
+  .patch("/reject", rejectRequest)
+  .patch("/accept", acceptRequest);
 
-  .patch("/:userId/request/reject", rejectRequest)
-  .patch("/:userId/request/accept", acceptRequest);
-
+// Get User by ID
 userRouter.get("/:userId", getUserById);
 
-//admin //owner
-
+// Admin/Owner Routes (if needed, uncomment and implement proper authorization)
 // userRouter.get("/all-users", isAuthorized(rule.OWNER, rule.ADMIN), getAllUser);
 // userRouter.patch("/:userId/change-rule", isAuthorized(rule.OWNER), changeRule);
 

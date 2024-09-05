@@ -1,5 +1,5 @@
 import pageModel from "./../../models/pageModel.js";
-import ApiError from "../../Utils/apiError.js";
+import ApiError from "../../utils/apiError.js";
 
 const isPageAdmin = async (req, res, next) => {
   if (!req.params.pageId) return next();

@@ -1,8 +1,8 @@
 import userModel from "../models/userModel.js";
-import ApiError from "../Utils/apiError.js";
-import catchAsync from "../Utils/catchAsync.js";
-import { pagination } from "../Utils/queryProcesses.js";
-import sendResponse from "../Utils/sendResponse.js";
+import ApiError from "../utils/apiError.js";
+import catchAsync from "../utils/catchAsync.js";
+import { pagination } from "../utils/queryProcesses.js";
+import sendResponse from "../utils/sendResponse.js";
 
 export const checkUsername = catchAsync(async (req, res, next) => {
   const { username } = req.body;
@@ -31,6 +31,21 @@ export const getProfile = catchAsync(async (req, res) => {
   };
 
   sendResponse(res, { data: { user } });
+});
+export const editProfile = catchAsync(async (req, res, next) => {
+  const { name, city, bio, website } = req.body;
+  const user = req.user;
+
+  // Update only the fields that are provided in the request body
+  if (name !== undefined) user.name = name;
+  if (city !== undefined) user.city = city;
+  if (bio !== undefined) user.bio = bio;
+  if (website !== undefined) user.website = website;
+
+  await user.save();
+
+  // Send the response with updated user data
+  sendResponse(res, { data: { name, city, bio, website } });
 });
 
 export const getFriends = catchAsync(async (req, res, next) => {

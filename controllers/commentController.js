@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import commentModel from "../models/commentModel.js";
-import { pagination } from "../Utils/queryProcesses.js";
-import sendResponse from "../Utils/sendResponse.js";
-import catchAsync from "./../Utils/catchAsync.js";
+import { pagination } from "../utils/queryProcesses.js";
+import sendResponse from "../utils/sendResponse.js";
+import catchAsync from "../utils/catchAsync.js";
 
 export const createComment = catchAsync(async (req, res, next) => {
   let postId = req.params.postId;

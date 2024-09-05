@@ -1,4 +1,4 @@
-import ApiError from "./../../Utils/apiError.js";
+import ApiError from "../../utils/apiError.js";
 
 export default function isDocumentExists(
   documentModel,

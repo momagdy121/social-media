@@ -23,6 +23,7 @@ import {
   removeFromAdmin,
   editPage,
   getFollowers,
+  searchPages,
 } from "./../controllers/pageController.js";
 
 const pageRouter = express.Router();
@@ -56,12 +57,14 @@ pageRouter.post(
   createPage
 );
 
+pageRouter.get("/search", searchPages);
+
 pageRouter
   .get("/:pageId", getPageById)
   .patch("/:pageId/follow", followAndUnFollowPage)
   .get("/:pageId/followers", getFollowers);
 
-pageRouter.patch("/:pageId", isOwner, editPage); //todo:implement it
+pageRouter.patch("/:pageId", isOwner, editPage);
 
 //admins stuff
 pageRouter.get("/:pageId/admins", getAdmins);

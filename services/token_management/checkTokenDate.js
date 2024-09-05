@@ -1,4 +1,4 @@
-import apiError from "../../Utils/apiError.js";
+import apiError from "../../utils/apiError.js";
 
 const checkTokenDate = (user, TokenCreatedAt, payload) => {
   if (TokenCreatedAt != payload.iat)

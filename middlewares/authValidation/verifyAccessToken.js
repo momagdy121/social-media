@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import apiError from "../../Utils/apiError.js";
+import apiError from "../../utils/apiError.js";
 import userModel from "../../models/userModel.js";
-import catchAsync from "../../Utils/catchAsync.js";
+import catchAsync from "../../utils/catchAsync.js";
 import checkTokenDate from "../../services/token_management/checkTokenDate.js";
 import handleTokenRefresh from "../../services/token_management/handleTokenRefresh.js";
 

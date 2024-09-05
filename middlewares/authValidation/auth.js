@@ -1,4 +1,4 @@
-import apiError from "../../Utils/apiError.js";
+import apiError from "../../utils/apiError.js";
 import userModel from "../../models/userModel.js";
 
 export function isAuthorized(...rules) {

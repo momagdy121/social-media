@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import validator from "validator";
 import bcryptjs from "bcryptjs";
-import rule from "../Utils/rules.js";
+import rule from "../utils/rules.js";
 import generateOTP from "../services/mailService/generateOTP.js";
 import sendVC from "../services/mailService/verificationMail.js";
 

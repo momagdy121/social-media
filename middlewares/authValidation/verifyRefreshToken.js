@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import userModel from "../../models/userModel.js";
-import apiError from "../../Utils/apiError.js";
+import apiError from "../../utils/apiError.js";
 import checkTokenDate from "../../services/token_management/checkTokenDate.js";
 
 const verifyRefreshToken = async (req, res) => {

@@ -1,5 +1,5 @@
 import cloudinary from "../config/cloudinary.js";
-import apiError from "../Utils/apiError.js";
+import apiError from "../utils/apiError.js";
 import { Readable } from "stream";
 
 const uploadImage = async (req, res, next) => {

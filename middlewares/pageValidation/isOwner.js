@@ -1,4 +1,4 @@
-import ApiError from "../../Utils/apiError.js";
+import ApiError from "../../utils/apiError.js";
 import pageModel from "./../../models/pageModel.js";
 
 const isOWner = async (req, res, next) => {
