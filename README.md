@@ -81,6 +81,7 @@ A robust backend for a social media application, built using Node.js, Express, a
 
 ## API Endpoints
 
+```
 1. Auth Routes (/api/auth)
    POST /signup: Register a new user.
    POST /resend-otp: Resend the OTP for account verification.
@@ -131,6 +132,8 @@ A robust backend for a social media application, built using Node.js, Express, a
    File Upload: Handles image uploads for user avatars and posts using multer.
    Contributing
    Contributions are welcome! Please fork the repository and submit a pull request for any feature or improvement.
+
+```
 
 License
 This project is licensed under the MIT License.
