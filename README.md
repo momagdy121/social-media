@@ -82,7 +82,7 @@ A robust backend for a social media application, built using Node.js, Express, a
 ## API Endpoints
 
 ```
-### 1. Auth Routes (/api/auth)
+1. Auth Routes (/api/auth)
    POST /signup: Register a new user.
    POST /resend-otp: Resend the OTP for account verification.
    PATCH /verify: Verify user account using OTP.
@@ -92,7 +92,7 @@ A robust backend for a social media application, built using Node.js, Express, a
    POST /forgot-password/verify: Verify the code for resetting the password.
    PATCH /forgot-password/reset: Reset the password using the verification code.
    POST /token: Refresh the access token.
-### 2. User Routes (/api/users)
+2. User Routes (/api/users)
    GET /profile: Get the current user's profile.
    PATCH /profile: Edit the current user's profile.
    GET /username/check: Check if a username is available.
@@ -103,7 +103,7 @@ A robust backend for a social media application, built using Node.js, Express, a
    POST /:userId/request: Send a friend request.
    PATCH /:userId/request/reject: Reject a friend request.
    PATCH /:userId/request/accept: Accept a friend request.
-###  3. Post Routes (/api/posts)
+ 3. Post Routes (/api/posts)
    GET /feed: Get posts for the user's feed.
    GET /: Get posts by user or page.
    POST /: Create a new post.
@@ -116,10 +116,10 @@ A robust backend for a social media application, built using Node.js, Express, a
    GET /:commentId: Get a specific comment.
    PATCH /:commentId: Update a specific comment.
    DELETE /:commentId: Delete a specific comment.
-### 5. Like Routes (/api/posts/:postId/likes)
+5. Like Routes (/api/posts/:postId/likes)
    POST /: Like or unlike a post.
    GET /: Get all likes for a post.
-### 6. Page Routes (/api/pages)
+6. Page Routes (/api/pages)
    GET /: Get pages.
    POST /: Create a page.
    GET /:pageId: Get a specific page.
