@@ -1,6 +1,10 @@
 # Social Media App
 
-A robust backend for a social media application, built using Node.js, Express, and MongoDB. This system supports user authentication, profile management, and interactions with posts, comments, likes and much more !, It provides endpoints for creating, editing, deleting, and retrieving user-generated content, ensuring a dynamic and interactive experience.
+A robust backend for a social media application, built using Node.js, Express, and MongoDB. This system supports user authentication, profile management, and interactions with posts, comments, likes and much more !, It provides endpoints for 
+creating, editing, deleting, and retrieving user-generated content, ensuring a dynamic and interactive experience.
+
+##documentaion on postman
+https://documenter.getpostman.com/view/34570091/2sAXjRUp3k
 
 ## project structure
 
