@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
-import apiError from "../../utils/apiError.js";
+import authErrors from "../../errors/authErrors.js";
+import userErrors from "./../../errors/userErrors.js";
 import userModel from "../../models/userModel.js";
 import catchAsync from "../../utils/catchAsync.js";
 import checkTokenDate from "../../services/token_management/checkTokenDate.js";
@@ -9,13 +10,11 @@ const verifyAccessToken = catchAsync(async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
   const accessToken = req.cookies.accessToken;
 
-  if (!refreshToken) return next(new apiError("Please log in first", 401));
+  if (!refreshToken) return next(authErrors.missingRefreshToken());
 
-  // If access token is not provided, immediately attempt to refresh using refresh token
   if (!accessToken) return await handleTokenRefresh(req, res, next);
 
   try {
-    // Verify the access token
     const payload = jwt.verify(
       accessToken,
       process.env.ACCESS_TOKEN_SECRET_STRING
@@ -23,9 +22,8 @@ const verifyAccessToken = catchAsync(async (req, res, next) => {
 
     const user = await userModel.findById(payload.id);
 
-    if (!user) return next(new apiError("User not found!", 404));
+    if (!user) return next(userErrors.userNotFound());
 
-    // Validate token date against user data
     checkTokenDate(user, user.accessTokenCreatedAt, payload);
 
     req.user = user;
@@ -35,10 +33,9 @@ const verifyAccessToken = catchAsync(async (req, res, next) => {
       // If the access token is expired, refresh it
       return await handleTokenRefresh(req, res, next);
     } else {
-      return next(new apiError("Invalid access token", 401));
+      return next(authErrors.invalidAccessToken());
     }
   }
 });
 
 export default verifyAccessToken;
-// Function to handle the creation and setting of new tokens

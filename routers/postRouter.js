@@ -10,14 +10,7 @@ import isDocumentExists from "../middlewares/globalValidation/isDocumentExists.j
 import postModel from "../models/postModel.js";
 import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
 import isDocumentYours from "../middlewares/globalValidation/isDocumentYours.js";
-import {
-  createPost,
-  deletePost,
-  getFeedPosts,
-  getPost,
-  updatePost,
-  getUserOrPagePosts,
-} from "../controllers/postController.js";
+import postController from "../controllers/postController.js";
 import isPageAdmin from "../middlewares/pageValidation/isPageAdmin.js";
 
 const postRouter = express.Router({ mergeParams: true });
@@ -35,32 +28,32 @@ postRouter.use("/:postId/likes", likeRouter);
 postRouter.use("/:postId/comments", commentRouter);
 
 // Route to get the feed posts
-postRouter.get("/feed", getFeedPosts);
+postRouter.get("/feed", postController.getFeedPosts);
 
 // Routes for user or page posts
 postRouter
   .route("/")
-  .get(getUserOrPagePosts) // Return current user's posts if `:userId` is not provided
+  .get(postController.getUserOrPagePosts) // Return current user's posts if `:userId` is not provided
   .post(
     upload.fields([{ name: "image", maxCount: 1 }]),
     checkBodyFieldsExistence(["description"]),
     isPageAdmin, // Check if the user is an admin if `pageId` is present in the URL
     uploadImage,
-    createPost
+    postController.createPost
   );
 
 // Routes for specific post operations
 postRouter
   .route("/:postId")
-  .get(getPost)
+  .get(postController.getPost)
   .patch(
     checkBodyFieldsExistence(["description"]),
     isDocumentYours(postModel, "postId"), // Ensure the post belongs to the user
-    updatePost
+    postController.updatePost
   )
   .delete(
     isDocumentYours(postModel, "postId"), // Ensure the post belongs to the user
-    deletePost
+    postController.deletePost
   );
 
 export default postRouter;

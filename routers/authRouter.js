@@ -1,27 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
 
-import {
-  signUp,
-  sendVerificationCode,
-  verifyAccount,
-  login,
-  sendForgotPasswordCode,
-  verifyForgotPasswordCode,
-  refreshTheToken,
-  logout,
-} from "../controllers/authController.js";
-import {
-  validateEmail,
-  isVerified,
-  validateOTP,
-  validateSignUp,
-  validateLogin,
-} from "../middlewares/authValidation/auth.js";
-
-import { changePassword } from "../controllers/userController.js";
+import authValidation from "../middlewares/authValidation/index.js";
+import userController from "../controllers/userController.js";
 import uploadImage from "../middlewares/uploadImage.js";
 import handleTokenRefresh from "../services/token_management/handleTokenRefresh.js";
+import checkBodyFieldsExistence from "./../middlewares/globalValidation/checkBodyFieldsExistence.js";
+import authController from "./../controllers/authController.js";
 
 const authRouter = Router();
 const upload = multer();
@@ -29,41 +14,51 @@ const upload = multer();
 authRouter.post(
   "/signup",
   upload.fields([{ name: "avatar", maxCount: 1 }]),
-  validateSignUp,
+  checkBodyFieldsExistence(["name", "username", "email", "password"]),
+  authValidation.isUserExists,
   uploadImage,
-  signUp
+  authController.signUp
 );
 
-authRouter.post("/resend-otp", validateEmail, isVerified, sendVerificationCode);
-authRouter.post("/token", handleTokenRefresh, refreshTheToken);
+authRouter.post(
+  "/resend-otp",
+  authValidation.validateEmail,
+  authValidation.isVerified,
+  authController.sendVerificationCode
+);
+authRouter.post("/token", handleTokenRefresh, authController.refreshTheToken);
 
 authRouter.patch(
   "/verify",
-  validateEmail,
-  isVerified,
-  validateOTP,
-  verifyAccount
+  authValidation.validateEmail,
+  authValidation.isVerified,
+  authValidation.validateOTP,
+  authController.verifyAccount
 );
 
-authRouter.post("/login", validateLogin, login);
+authRouter.post("/login", authValidation.validateLogin, authController.login);
 
-authRouter.post("/logout", logout);
+authRouter.post("/logout", authController.logout);
 
 //forgot password
-authRouter.post("/forgot-password/code", validateEmail, sendForgotPasswordCode);
+authRouter.post(
+  "/forgot-password/code",
+  authValidation.validateEmail,
+  authController.sendForgotPasswordCode
+);
 
 authRouter.post(
   "/forgot-password/verify",
-  validateEmail,
-  validateOTP,
-  verifyForgotPasswordCode
+  authValidation.validateEmail,
+  authValidation.validateOTP,
+  authController.verifyForgotPasswordCode
 );
 
 authRouter.patch(
   "/forgot-password/reset",
-  validateEmail,
-  validateOTP,
-  changePassword
+  authValidation.validateEmail,
+  authValidation.validateOTP,
+  userController.changePassword
 );
 
 export default authRouter;

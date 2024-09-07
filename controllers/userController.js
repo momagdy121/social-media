@@ -1,20 +1,20 @@
 import userModel from "../models/userModel.js";
-import ApiError from "../utils/apiError.js";
+import userErrors from "../errors/userErrors.js";
 import catchAsync from "../utils/catchAsync.js";
 import { pagination } from "../utils/queryProcesses.js";
 import sendResponse from "../utils/sendResponse.js";
 
-export const checkUsername = catchAsync(async (req, res, next) => {
+const checkUsername = catchAsync(async (req, res, next) => {
   const { username } = req.body;
 
   const user = await userModel.exists({ username });
 
-  if (user) return next(new ApiError("username is not available", 400));
+  if (user) return next(userErrors.usernameNotAvailable());
 
-  sendResponse(res, { message: "username is available" });
+  sendResponse(res, { message: "Username is available" });
 });
 
-export const getProfile = catchAsync(async (req, res) => {
+const getProfile = catchAsync(async (req, res) => {
   const { _id, name, username, rule, verified, avatar, city, bio, website } =
     req.user;
 
@@ -32,11 +32,11 @@ export const getProfile = catchAsync(async (req, res) => {
 
   sendResponse(res, { data: { user } });
 });
-export const editProfile = catchAsync(async (req, res, next) => {
+
+const editProfile = catchAsync(async (req, res, next) => {
   const { name, city, bio, website } = req.body;
   const user = req.user;
 
-  // Update only the fields that are provided in the request body
   if (name !== undefined) user.name = name;
   if (city !== undefined) user.city = city;
   if (bio !== undefined) user.bio = bio;
@@ -44,11 +44,10 @@ export const editProfile = catchAsync(async (req, res, next) => {
 
   await user.save();
 
-  // Send the response with updated user data
   sendResponse(res, { data: { name, city, bio, website } });
 });
 
-export const getFriends = catchAsync(async (req, res, next) => {
+const getFriends = catchAsync(async (req, res, next) => {
   const user = req.user;
   const friends = await userModel
     .find({ _id: { $in: user.friends } })
@@ -58,13 +57,11 @@ export const getFriends = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { friends } });
 });
 
-export const usersSearch = catchAsync(async (req, res, next) => {
+const usersSearch = catchAsync(async (req, res, next) => {
   const { limit, skip, page } = pagination(req);
 
-  if (!req.query.q)
-    return next(new ApiError("Please provide a search query", 400));
+  if (!req.query.q) return next(userErrors.provideSearchQuery());
 
-  // Search for users matching the query
   let users = await userModel
     .findByName(req.query.q)
     .limit(limit)
@@ -72,7 +69,6 @@ export const usersSearch = catchAsync(async (req, res, next) => {
     .selectBasicInfo()
     .lean();
 
-  // Check if each user is a friend of the current user
   users.forEach((user) => {
     user.isFriend = req.user.friends.includes(user._id.toString());
   });
@@ -80,18 +76,20 @@ export const usersSearch = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { page, users } });
 });
 
-export const getUserById = catchAsync(async (req, res, next) => {
+const getUserById = catchAsync(async (req, res, next) => {
   let user = await userModel
     .findById(req.params.userId)
     .select("name username avatar _id bio city website")
     .lean();
+
+  if (!user) return next(userErrors.userNotFound());
 
   user.isFriend = req.user.friends.includes(user._id.toString());
 
   sendResponse(res, { data: { user } });
 });
 
-export const changePassword = catchAsync(async (req, res, next) => {
+const changePassword = catchAsync(async (req, res, next) => {
   const user = req.user;
 
   user.password = req.body.new;
@@ -104,63 +102,56 @@ export const changePassword = catchAsync(async (req, res, next) => {
 
   sendResponse(res, {
     code: 202,
-    message: "password changed successfully, please login again",
+    message: "Password changed successfully, please login again",
   });
 });
 
-//requests
-export const sendRequest = catchAsync(async (req, res, next) => {
+const sendRequest = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
 
   const user = await userModel.findById(userId);
 
   if (user.pendingRequests.includes(req.user._id))
-    return next(new ApiError("you already sent a request", 400));
+    return next(userErrors.alreadySentRequest());
 
-  //add to pending requests and save
   user.pendingRequests.push(req.user._id);
-
   await user.save();
 
-  sendResponse(res, { message: "request sent successfully" });
+  sendResponse(res, { message: "Request sent successfully" });
 });
 
-export const rejectRequest = catchAsync(async (req, res, next) => {
+const rejectRequest = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
   const user = req.user;
 
   if (!user.pendingRequests.includes(userId))
-    return next(new ApiError("you don't have this request", 400));
+    return next(userErrors.requestNotFound());
 
-  //remove from pending requests and save
   user.pendingRequests.pull(userId);
-
   await user.save();
-  sendResponse(res, { message: "request rejected successfully", code: 202 });
+
+  sendResponse(res, { message: "Request rejected successfully", code: 202 });
 });
 
-export const acceptRequest = catchAsync(async (req, res, next) => {
+const acceptRequest = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
   const { user } = req;
 
   if (!user.pendingRequests.includes(userId.toString()))
-    return next(new ApiError("you don't have this request", 400));
+    return next(userErrors.requestNotFound());
 
   const otherUser = await userModel.findById(userId);
 
-  //remove from pending requests and add to friends
   user.pendingRequests.pull(userId);
-
-  //add to friends
-  user.friends.push(req.user._id);
+  user.friends.push(user._id);
   otherUser.friends.push(user._id);
 
   await Promise.all([user.save(), otherUser.save()]);
 
-  sendResponse(res, { message: "request accepted successfully", code: 202 });
+  sendResponse(res, { message: "Request accepted successfully", code: 202 });
 });
 
-export const getPendingRequests = catchAsync(async (req, res, next) => {
+const getPendingRequests = catchAsync(async (req, res, next) => {
   const user = req.user;
 
   const users = await userModel
@@ -171,28 +162,17 @@ export const getPendingRequests = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { users } });
 });
 
-//ownership
-/* export const changeRule = catchAsync((req, res, next) => {
-  if (!req.body.rule) return next(new ApiError("Please provide rule", 400));
-
-  if (![rule.ADMIN, rule.USER].includes(req.body.rule))
-    return next(new ApiError("invalid rule provided", 400));
-
-  userModel
-    .findByIdAndUpdate(
-      req.params.userId,
-      { rule: req.body.rule },
-      { new: true }
-    )
-    .then((user) => {
-      res.status(200).json(user);
-    })
-    .catch((error) => {
-      return next(new ApiError("user not found", 404));
-    });
-});
-export const getAllUser = catchAsync(async (req, res) => {
-  const users = await userModel.find(req.query);
-  sendResponse(res, { data: { users } });
-});
- */
+const userController = {
+  checkUsername,
+  getProfile,
+  editProfile,
+  getFriends,
+  usersSearch,
+  getUserById,
+  changePassword,
+  sendRequest,
+  rejectRequest,
+  acceptRequest,
+  getPendingRequests,
+};
+export default userController;

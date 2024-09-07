@@ -17,10 +17,6 @@ function handleProdError(err, res) {
   error.message = err.message; // Ensure the error message is included
   if (err.name === "ValidationError") {
     error = handleValidatorErrors(err);
-  } else if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
-    error = handleEmailError();
-  } else if (err.kind === "ObjectId" && err.path === "_id") {
-    error = handleObjectIdError();
   } else if (
     err.name === "JsonWebTokenError" ||
     (err instanceof SyntaxError && err.message.includes("JSON"))
@@ -53,19 +49,11 @@ function handleValidatorErrors(err) {
   return new ApiError(errors.join(", "), 400);
 }
 
-function handleEmailError() {
-  return new ApiError("This email is already in use", 403);
-}
-
 function handleOtherErrors(err) {
   return new ApiError(
     err.message || "please try to report the backend developer",
     err.statusCode || 500
   );
-}
-
-function handleObjectIdError() {
-  return new ApiError("Please enter a valid ID", 400);
 }
 
 function handleInvalidToken() {

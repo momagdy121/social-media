@@ -3,3 +3,4 @@ models/cat.model.js
 .vscode/
 config.env
 test.js
+test2.js

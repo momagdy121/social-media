@@ -1,12 +1,14 @@
 import jwt from "jsonwebtoken";
+import authErrors from "../../errors/authErrors.js";
 import userModel from "../../models/userModel.js";
-import apiError from "../../utils/apiError.js";
 import checkTokenDate from "../../services/token_management/checkTokenDate.js";
+import userErrors from "../../errors/userErrors.js";
 
-const verifyRefreshToken = async (req, res) => {
+const verifyRefreshToken = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
 
-  if (!refreshToken) throw new apiError("Please log in first", 401);
+  if (!refreshToken) return next(authErrors.missingRefreshToken());
+
   try {
     const payload = jwt.verify(
       refreshToken,
@@ -15,19 +17,20 @@ const verifyRefreshToken = async (req, res) => {
 
     const user = await userModel.findById(payload.id);
 
-    if (!user) throw new apiError("User not found!", 404);
+    if (!user) return next(userErrors.userNotFound());
 
-    checkTokenDate(user, user.refreshTokenCreatedAt, payload, apiError);
+    checkTokenDate(user, user.refreshTokenCreatedAt, payload, authErrors);
 
     req.user = user;
+    next();
   } catch (error) {
     if (
       error.name === "TokenExpiredError" ||
       error.name === "JsonWebTokenError"
     ) {
-      throw new apiError("Invalid refresh token please,login again", 401);
+      return next(authErrors.invalidRefreshToken());
     } else {
-      throw new apiError(error.message, 401);
+      return next(new authErrors.invalidAccessToken()); // Generic invalid token error
     }
   }
 };

@@ -1,30 +1,15 @@
 import express from "express";
 import multer from "multer";
-
 import verifyAccessToken from "../middlewares/authValidation/verifyAccessToken.js";
 import validateObjectID from "../middlewares/globalValidation/validateObjectID.js";
 import postRouter from "./postRouter.js";
 import pageModel from "../models/pageModel.js";
 import isDocumentExits from "../middlewares/globalValidation/isDocumentExists.js";
-import isOwner from "../middlewares/pageValidation/isOwner.js";
-import isUserInPendingAdminRequests from "../middlewares/pageValidation/isUserInPendingAdminRequests.js";
 import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
 import allowRoutes from "./../middlewares/allowRoutes.js";
 import uploadImage from "./../middlewares/uploadImage.js";
-import {
-  acceptAdmin,
-  createPage,
-  followAndUnFollowPage,
-  getPageById,
-  getAdmins,
-  requestAndCancelRequestAdmin,
-  getPendingAdminRequests,
-  rejectAdminRequest,
-  removeFromAdmin,
-  editPage,
-  getFollowers,
-  searchPages,
-} from "./../controllers/pageController.js";
+import pageController from "./../controllers/pageController.js";
+import pageValidation from "./../middlewares/pageValidation/index.js";
 
 const pageRouter = express.Router();
 const upload = multer();
@@ -54,37 +39,48 @@ pageRouter.post(
   ]),
   checkBodyFieldsExistence(["name", "description"]),
   uploadImage, //cloudinary
-  createPage
+  pageController.createPage
 );
 
-pageRouter.get("/search", searchPages);
+pageRouter.get("/search", pageController.searchPages);
 
 pageRouter
-  .get("/:pageId", getPageById)
-  .patch("/:pageId/follow", followAndUnFollowPage)
-  .get("/:pageId/followers", getFollowers);
+  .get("/:pageId", pageController.getPageById)
+  .patch("/:pageId/follow", pageController.followAndUnFollowPage)
+  .get("/:pageId/followers", pageController.getFollowers);
 
-pageRouter.patch("/:pageId", isOwner, editPage);
+pageRouter.patch("/:pageId", pageValidation.isOwner, pageController.editPage);
 
 //admins stuff
-pageRouter.get("/:pageId/admins", getAdmins);
+pageRouter.get("/:pageId/admins", pageController.getAdmins);
 
-pageRouter.patch("/:pageId/admin/request", requestAndCancelRequestAdmin);
+pageRouter.patch(
+  "/:pageId/admin/request",
+  pageController.requestAndCancelRequestAdmin
+);
 
 pageRouter
-  .get("/:pageId/admin/pending", isOwner, getPendingAdminRequests)
+  .get(
+    "/:pageId/admin/pending",
+    pageValidation.isOwner,
+    pageController.getPendingAdminRequests
+  )
   .patch(
     "/:pageId/admin/accept",
-    isOwner,
-    isUserInPendingAdminRequests,
-    acceptAdmin
+    pageValidation.isOwner,
+    pageValidation.isUserInPendingAdminRequests,
+    pageController.acceptAdmin
   )
   .patch(
     "/:pageId/admin/reject",
-    isOwner,
-    isUserInPendingAdminRequests,
-    rejectAdminRequest
+    pageValidation.isOwner,
+    pageValidation.isUserInPendingAdminRequests,
+    pageController.rejectAdminRequest
   )
-  .patch("/:pageId/admin/remove", isOwner, removeFromAdmin);
+  .patch(
+    "/:pageId/admin/remove",
+    pageValidation.isOwner,
+    pageController.removeFromAdmin
+  );
 
 export default pageRouter;

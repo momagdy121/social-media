@@ -1,22 +1,8 @@
 import { Router } from "express";
 import postRouter from "./postRouter.js";
 import validateObjectID from "../middlewares/globalValidation/validateObjectID.js";
-import verifyAccessToken from "./../middlewares/authValidation/verifyAccessToken.js";
-
-import { verifyPassword } from "../middlewares/authValidation/auth.js";
-import {
-  getFriends,
-  changePassword,
-  checkUsername,
-  getProfile,
-  acceptRequest,
-  rejectRequest,
-  sendRequest,
-  getPendingRequests,
-  getUserById,
-  usersSearch,
-  editProfile,
-} from "./../controllers/userController.js";
+import authValidation from "../middlewares/authValidation/index.js";
+import userController from "./../controllers/userController.js";
 import allowRoutes from "../middlewares/allowRoutes.js";
 import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
 import isDocumentExists from "./../middlewares/globalValidation/isDocumentExists.js";
@@ -24,11 +10,10 @@ import userModel from "../models/userModel.js";
 
 const userRouter = Router();
 
-// Param Middleware for Validating userId
 userRouter.param("userId", validateObjectID("userId", "user"));
 userRouter.param("userId", isDocumentExists(userModel, "userId", "user"));
 
-// Nested Routes for Posts
+// NOTE: nested and separate routes are implemented for posts
 userRouter.use(
   "/:userId/posts",
   allowRoutes([
@@ -41,44 +26,44 @@ userRouter.use(
   postRouter
 );
 
-// Public Routes
+//check if the user name is available or not to use
 userRouter.get(
   "/username/check",
   checkBodyFieldsExistence(["username"]),
   checkUsername
 );
 
-// Authenticated Routes
-userRouter.use(verifyAccessToken); // Apply Access Token Verification for routes below
+userRouter.use(authValidation.verifyAccessToken); //verify the access token
 
-// User Profile Management
-userRouter.route("/profile").get(getProfile).patch(editProfile);
+//get the data of the user
+userRouter
+  .route("/profile")
+  .get(userController.getProfile)
+  .patch(userController.editProfile);
 
-// User Search
-userRouter.get("/search", usersSearch);
+userRouter.get("/search", userController.usersSearch);
 
-// Password Management
 userRouter.patch(
   "/password/change",
   checkBodyFieldsExistence(["old", "new"]),
-  verifyPassword,
-  changePassword
+  authValidation.verifyPassword,
+  userController.changePassword
 );
 
-// Friend Requests Management
-userRouter.get("/pending-requests", getPendingRequests);
-userRouter.get("/friends", getFriends);
+//friend request
+userRouter.get("/pending-requests", userController.getPendingRequests);
+userRouter.get("/friends", userController.getFriends);
 
 userRouter
-  .route("/:userId/request")
-  .post(sendRequest)
-  .patch("/reject", rejectRequest)
-  .patch("/accept", acceptRequest);
+  .post("/:userId/request", userController.sendRequest)
 
-// Get User by ID
-userRouter.get("/:userId", getUserById);
+  .patch("/:userId/request/reject", userController.rejectRequest)
+  .patch("/:userId/request/accept", userController.acceptRequest);
 
-// Admin/Owner Routes (if needed, uncomment and implement proper authorization)
+userRouter.get("/:userId", userController.getUserById);
+
+//admin //owner
+
 // userRouter.get("/all-users", isAuthorized(rule.OWNER, rule.ADMIN), getAllUser);
 // userRouter.patch("/:userId/change-rule", isAuthorized(rule.OWNER), changeRule);
 

@@ -5,10 +5,11 @@ import resetPassMail from "../services/mailService/resetPassMail.js";
 import generateTokensFullProcess from "../services/token_management/generateTokensFullProcess.js";
 import sendResponse from "../utils/sendResponse.js";
 
-export const signUp = catchAsync(async (req, res, next) => {
+const signUp = catchAsync(async (req, res, next) => {
   const { email, password, name, username } = req.body;
 
-  const avatar = res.locals.uploadedFiles[0]?.url || null;
+  let avatar = null;
+  if (req.files) avatar = res.locals.uploadedFiles[0].url;
 
   const user = await userModel.create({
     email,
@@ -36,7 +37,7 @@ export const signUp = catchAsync(async (req, res, next) => {
   });
 });
 
-export const sendVerificationCode = catchAsync(async (req, res, next) => {
+const sendVerificationCode = catchAsync(async (req, res, next) => {
   const user = req.user;
 
   const verificationCode = await user.createOTP();
@@ -48,7 +49,7 @@ export const sendVerificationCode = catchAsync(async (req, res, next) => {
   sendResponse(res, { message: "We sent a verification code to your email" });
 });
 
-export const verifyAccount = catchAsync(async (req, res, next) => {
+const verifyAccount = catchAsync(async (req, res, next) => {
   const user = req.user;
   // Update user properties
   user.verified = true;
@@ -61,14 +62,24 @@ export const verifyAccount = catchAsync(async (req, res, next) => {
   sendResponse(res, { message: "verified" });
 });
 
-export const login = catchAsync(async (req, res, next) => {
+const login = catchAsync(async (req, res, next) => {
   const user = req.user;
   await generateTokensFullProcess(user, res);
 
-  sendResponse(res, { message: "logged in" });
+  sendResponse(res, {
+    message: "logged in",
+    data: {
+      user: {
+        name: user.name,
+        username: user.username,
+        avatar: user.avatar,
+        id: user._id,
+      },
+    },
+  });
 });
 
-export const logout = catchAsync(async (req, res, next) => {
+const logout = catchAsync(async (req, res, next) => {
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: true,
@@ -84,7 +95,7 @@ export const logout = catchAsync(async (req, res, next) => {
   sendResponse(res, { message: "logged out" });
 });
 
-export const sendForgotPasswordCode = catchAsync(async (req, res, next) => {
+const sendForgotPasswordCode = catchAsync(async (req, res, next) => {
   const user = req.user;
   const resetCode = await user.createOTP();
 
@@ -97,15 +108,29 @@ export const sendForgotPasswordCode = catchAsync(async (req, res, next) => {
   });
 });
 
-export const verifyForgotPasswordCode = catchAsync(async (req, res, next) => {
+const verifyForgotPasswordCode = catchAsync(async (req, res, next) => {
   sendResponse(res, {
     message:
       "now make patch request with the code , email and the the new password ",
   });
 });
 
-export const refreshTheToken = catchAsync(async (req, res, next) => {
+const refreshTheToken = catchAsync(async (req, res, next) => {
   sendResponse(res, {
     message: "refreshed",
   });
 });
+
+//import them as one object
+const authController = {
+  signUp,
+  sendVerificationCode,
+  verifyAccount,
+  login,
+  logout,
+  sendForgotPasswordCode,
+  verifyForgotPasswordCode,
+  refreshTheToken,
+};
+
+export default authController;

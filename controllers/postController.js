@@ -12,7 +12,7 @@ import sendResponse from "../utils/sendResponse.js";
 import catchAsync from "../utils/catchAsync.js";
 import pageModel from "../models/pageModel.js";
 
-export const createPost = catchAsync(async (req, res, next) => {
+const createPost = catchAsync(async (req, res, next) => {
   const user = req.user;
   const image = res.locals.uploadedFiles[0]?.url || null;
   const { description } = req.body;
@@ -28,7 +28,7 @@ export const createPost = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { post } });
 });
 
-export const getPost = catchAsync(async (req, res, next) => {
+const getPost = catchAsync(async (req, res, next) => {
   const { postId } = req.params;
 
   let post = await postModel.aggregate([
@@ -44,7 +44,7 @@ export const getPost = catchAsync(async (req, res, next) => {
   });
 });
 
-export const getFeedPosts = catchAsync(async (req, res) => {
+const getFeedPosts = catchAsync(async (req, res) => {
   const user = req.user;
 
   const { skip, limit, page } = pagination(req);
@@ -63,7 +63,7 @@ export const getFeedPosts = catchAsync(async (req, res) => {
   sendResponse(res, { data: { page, posts } });
 });
 
-export const getUserOrPagePosts = catchAsync(async (req, res) => {
+const getUserOrPagePosts = catchAsync(async (req, res) => {
   const { skip, limit, page } = pagination(req);
 
   const entityID = mongoose.Types.ObjectId(
@@ -104,7 +104,7 @@ export const getUserOrPagePosts = catchAsync(async (req, res) => {
   });
 });
 
-export const updatePost = catchAsync(async (req, res) => {
+const updatePost = catchAsync(async (req, res) => {
   let { postId } = req.params;
   const { description } = req.body;
 
@@ -122,7 +122,7 @@ export const updatePost = catchAsync(async (req, res) => {
   });
 });
 
-export const deletePost = catchAsync(async (req, res) => {
+const deletePost = catchAsync(async (req, res) => {
   let { id } = req.params;
 
   id = mongoose.Types.ObjectId(id);
@@ -131,3 +131,14 @@ export const deletePost = catchAsync(async (req, res) => {
   //remove from posts collection
   sendResponse(res, { message: "post deleted successfully", data: { post } });
 });
+
+const postController = {
+  createPost,
+  getPost,
+  getFeedPosts,
+  getUserOrPagePosts,
+  updatePost,
+  deletePost,
+};
+
+export default postController;

@@ -2,7 +2,7 @@ import catchAsync from "../utils/catchAsync.js";
 import sendResponse from "../utils/sendResponse.js";
 import likeModel from "./../models/likeModel.js";
 
-export const likeAndUnlike = catchAsync(async (req, res) => {
+const likeAndUnlike = catchAsync(async (req, res) => {
   const { postId } = req.params;
   const user = req.user;
 
@@ -16,7 +16,7 @@ export const likeAndUnlike = catchAsync(async (req, res) => {
   }
 });
 
-export const getLikes = catchAsync(async (req, res, next) => {
+const getLikes = catchAsync(async (req, res, next) => {
   const { postId } = req.params;
 
   const likers = await likeModel
@@ -26,3 +26,10 @@ export const getLikes = catchAsync(async (req, res, next) => {
 
   sendResponse(res, { data: { likers } });
 });
+
+const likeController = {
+  likeAndUnlike,
+  getLikes,
+};
+
+export default likeController;

@@ -4,7 +4,7 @@ import { pagination } from "../utils/queryProcesses.js";
 import sendResponse from "../utils/sendResponse.js";
 import catchAsync from "../utils/catchAsync.js";
 
-export const createComment = catchAsync(async (req, res, next) => {
+const createComment = catchAsync(async (req, res, next) => {
   let postId = req.params.postId;
   postId = mongoose.Types.ObjectId(postId);
 
@@ -18,7 +18,7 @@ export const createComment = catchAsync(async (req, res, next) => {
 
   sendResponse(res, { code: 201, data: { comment } });
 });
-export const getComment = catchAsync(async (req, res, next) => {
+const getComment = catchAsync(async (req, res, next) => {
   const { commentId } = req.params;
   // Fetch the comment
   const comment = await commentModel.findById(commentId).populate({
@@ -29,7 +29,7 @@ export const getComment = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { comment } });
 });
 
-export const deleteComment = catchAsync(async (req, res, next) => {
+const deleteComment = catchAsync(async (req, res, next) => {
   const commentId = req.params.commentId;
 
   // Delete the comment
@@ -38,7 +38,7 @@ export const deleteComment = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { comment }, message: "comment deleted" });
 });
 
-export const updateComment = catchAsync(async (req, res) => {
+const updateComment = catchAsync(async (req, res) => {
   const commentId = req.params.commentId;
   // Update the comment
   const updatedComment = await commentModel.findByIdAndUpdate(
@@ -50,7 +50,7 @@ export const updateComment = catchAsync(async (req, res) => {
   sendResponse(res, { data: { updatedComment } });
 });
 
-export const getAllComment = catchAsync(async (req, res) => {
+const getAllComment = catchAsync(async (req, res) => {
   const { limit, skip, page } = pagination(req);
 
   const postId = mongoose.Types.ObjectId(req.params.postId);
@@ -68,3 +68,13 @@ export const getAllComment = catchAsync(async (req, res) => {
 
   sendResponse(res, { data: { page, comments } });
 });
+
+const commentController = {
+  createComment,
+  getComment,
+  deleteComment,
+  updateComment,
+  getAllComment,
+};
+
+export default commentController;

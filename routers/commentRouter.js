@@ -1,12 +1,6 @@
 import express from "express";
 
-import {
-  getAllComment,
-  createComment,
-  deleteComment,
-  getComment,
-  updateComment,
-} from "../controllers/commentController.js";
+import commentController from "../controllers/commentController.js";
 import checkBodyFieldsExistence from "../middlewares/globalValidation/checkBodyFieldsExistence.js";
 import isDocumentExists from "../middlewares/globalValidation/isDocumentExists.js";
 import isDocumentYours from "../middlewares/globalValidation/isDocumentYours.js";
@@ -24,17 +18,23 @@ commentRouter.param(
 
 commentRouter
   .route("/")
-  .get(getAllComment)
-  .post(checkBodyFieldsExistence(["description"]), createComment);
+  .get(commentController.getAllComment)
+  .post(
+    checkBodyFieldsExistence(["description"]),
+    commentController.createComment
+  );
 
 commentRouter
   .route("/:commentId")
-  .get(getComment)
+  .get(commentController.getComment)
   .patch(
     checkBodyFieldsExistence(["description"]),
     isDocumentYours(commentModel, "commentId"),
-    updateComment
+    commentController.updateComment
   )
-  .delete(isDocumentYours(commentModel, "commentId"), deleteComment);
+  .delete(
+    isDocumentYours(commentModel, "commentId"),
+    commentController.deleteComment
+  );
 
 export default commentRouter;

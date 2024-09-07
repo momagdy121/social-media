@@ -12,7 +12,7 @@ import {
 } from "../pipelines/pagePipelines.js";
 import { countFollowersPipeline } from "../pipelines/followersPipeLines.js";
 
-export const getPageById = catchAsync(async (req, res, next) => {
+const getPageById = catchAsync(async (req, res, next) => {
   let { pageId } = req.params;
 
   pageId = mongoose.Types.ObjectId(pageId);
@@ -35,12 +35,16 @@ export const getPageById = catchAsync(async (req, res, next) => {
     data: { page: { ...page[0], followersCount } },
   });
 });
-export const searchPages = catchAsync(async (req, res, next) => {
+const searchPages = catchAsync(async (req, res, next) => {
   const { q } = req.query;
+  if (!q)
+    return next(
+      new ApiError("Please provide a search query as ?q=your query", 400)
+    );
   const { limit, skip, page } = pagination(req);
   const pages = await pageModel
     .find({ name: { $regex: q, $options: "i" } })
-    .select("name image -_id")
+    .select("name image _id")
     .limit(limit)
     .skip(skip)
     .lean();
@@ -48,7 +52,7 @@ export const searchPages = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { page, pages } });
 });
 
-export const getFollowers = catchAsync(async (req, res, next) => {
+const getFollowers = catchAsync(async (req, res, next) => {
   let { pageId } = req.params;
   const { limit, skip, page } = pagination(req);
 
@@ -65,7 +69,7 @@ export const getFollowers = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { page, followers } });
 });
 
-export const createPage = catchAsync(async (req, res, next) => {
+const createPage = catchAsync(async (req, res, next) => {
   const uploadedFiles = res.locals.uploadedFiles || [];
 
   const image = uploadedFiles[0]?.url || null;
@@ -85,7 +89,7 @@ export const createPage = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { page } });
 });
 
-export const followAndUnFollowPage = catchAsync(async (req, res, next) => {
+const followAndUnFollowPage = catchAsync(async (req, res, next) => {
   const user = req.user;
   const { pageId } = req.params;
 
@@ -113,7 +117,7 @@ export const followAndUnFollowPage = catchAsync(async (req, res, next) => {
   }
 });
 
-export const getAdmins = catchAsync(async (req, res, next) => {
+const getAdmins = catchAsync(async (req, res, next) => {
   const admins = await pageModel
     .findById(req.params.pageId)
     .select("admins -_id")
@@ -125,32 +129,30 @@ export const getAdmins = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { ...admins } });
 });
 
-export const requestAndCancelRequestAdmin = catchAsync(
-  async (req, res, next) => {
-    const user = req.user;
-    const { pageId } = req.params;
-    const page = await pageModel.findById(pageId);
+const requestAndCancelRequestAdmin = catchAsync(async (req, res, next) => {
+  const user = req.user;
+  const { pageId } = req.params;
+  const page = await pageModel.findById(pageId);
 
-    if (page.admins.includes(user._id))
-      return next(new ApiError("you are already an admin", 400));
+  if (page.admins.includes(user._id))
+    return next(new ApiError("you are already an admin", 400));
 
-    if (page.pendingAdminRequests.includes(user._id)) {
-      page.pendingAdminRequests.pull(user._id);
-      await page.save();
-      sendResponse(res, { message: "request cancelled" });
-    } else {
-      page.pendingAdminRequests.push(user._id);
-      await page.save();
-      sendResponse(res, { message: "request sent" });
-    }
+  if (page.pendingAdminRequests.includes(user._id)) {
+    page.pendingAdminRequests.pull(user._id);
+    await page.save();
+    sendResponse(res, { message: "request cancelled" });
+  } else {
+    page.pendingAdminRequests.push(user._id);
+    await page.save();
+    sendResponse(res, { message: "request sent" });
   }
-);
+});
 //owner
-export const editPage = catchAsync(async (req, res, next) => {
+const editPage = catchAsync(async (req, res, next) => {
   res.send({ message: "not implemented" });
 });
 
-export const acceptAdmin = catchAsync(async (req, res, next) => {
+const acceptAdmin = catchAsync(async (req, res, next) => {
   const { userId } = req.body;
   const { page } = req;
 
@@ -162,7 +164,7 @@ export const acceptAdmin = catchAsync(async (req, res, next) => {
   sendResponse(res, { message: "admin accepted" });
 });
 
-export const getPendingAdminRequests = catchAsync(async (req, res, next) => {
+const getPendingAdminRequests = catchAsync(async (req, res, next) => {
   const { limit, skip, page } = pagination(req);
 
   const pendingAdmins = await pageModel
@@ -179,7 +181,7 @@ export const getPendingAdminRequests = catchAsync(async (req, res, next) => {
   sendResponse(res, { data: { page, ...pendingAdmins } });
 });
 
-export const rejectAdminRequest = catchAsync(async (req, res, next) => {
+const rejectAdminRequest = catchAsync(async (req, res, next) => {
   const page = req.page;
   const userId = req.body.userId;
   page.pendingAdminRequests.pull(userId);
@@ -189,7 +191,7 @@ export const rejectAdminRequest = catchAsync(async (req, res, next) => {
   sendResponse(res, { message: "admin rejected" });
 });
 
-export const removeFromAdmin = catchAsync(async (req, res, next) => {
+const removeFromAdmin = catchAsync(async (req, res, next) => {
   const { userId } = req.body;
   const { page } = req;
 
@@ -202,3 +204,19 @@ export const removeFromAdmin = catchAsync(async (req, res, next) => {
 
   sendResponse(res, { message: "admin removed" });
 });
+
+const pageController = {
+  createPage,
+  followAndUnFollowPage,
+  getAdmins,
+  requestAndCancelRequestAdmin,
+  editPage,
+  acceptAdmin,
+  getPendingAdminRequests,
+  rejectAdminRequest,
+  removeFromAdmin,
+  getPageById,
+  getFollowers,
+  searchPages,
+};
+export default pageController;
